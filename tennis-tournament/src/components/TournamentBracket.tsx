@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit3, Trophy, Users, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit3, Trophy, Users, Calendar, FileText } from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
 import type { Match, Team } from '../types/tournament';
 
@@ -13,6 +13,8 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [teamNameInput, setTeamNameInput] = useState('');
   const [scoreInputs, setScoreInputs] = useState<{score1: string; score2: string}>({score1: '', score2: ''});
+  const [showBulkInput, setShowBulkInput] = useState(false);
+  const [bulkTeamNames, setBulkTeamNames] = useState('');
 
   if (!currentTournament) {
     return <div>대회를 찾을 수 없습니다.</div>;
@@ -47,6 +49,39 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
     }
     setEditingMatch(null);
     setScoreInputs({score1: '', score2: ''});
+  };
+
+  const handleBulkTeamInput = () => {
+    if (!bulkTeamNames.trim()) return;
+    
+    // 쉼표와 줄바꿈으로 구분된 팀명들을 파싱
+    const teamNames = bulkTeamNames
+      .split(/[,\n]/)  // 쉼표 또는 줄바꿈으로 분할
+      .map(name => name.trim())
+      .filter(name => name.length > 0);
+    
+    // 팀 개수만큼만 처리 (초과하는 팀명은 무시)
+    const teamsToUpdate = currentTournament.teams.slice(0, teamNames.length);
+    
+    // 각 팀의 이름을 업데이트
+    teamsToUpdate.forEach((team, index) => {
+      if (teamNames[index]) {
+        updateTeamName(team.id, teamNames[index]);
+      }
+    });
+    
+    // 모달 닫기 및 입력 초기화
+    setShowBulkInput(false);
+    setBulkTeamNames('');
+  };
+
+  const handleBulkInputOpen = () => {
+    // 현재 팀명들을 줄바꿈으로 구분된 문자열로 초기화
+    const currentTeamNames = currentTournament.teams
+      .map(team => team.name)
+      .join('\n');
+    setBulkTeamNames(currentTeamNames);
+    setShowBulkInput(true);
   };
 
   const groupMatchesByRound = () => {
@@ -118,7 +153,17 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
 
         {/* Teams Section */}
         <div className="mb-4 sm:mb-8">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-4">참가 팀</h2>
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">참가 팀</h2>
+            <button
+              onClick={handleBulkInputOpen}
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                       transition-colors duration-200 text-xs sm:text-sm font-medium"
+            >
+              <FileText size={14} />
+              팀명 일괄 입력
+            </button>
+          </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {currentTournament.teams.map((team) => (
               <div key={team.id} className="bg-white rounded-lg p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow">
@@ -242,6 +287,58 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
+
+        {/* Bulk Team Input Modal */}
+        {showBulkInput && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4">팀명 일괄 입력</h3>
+                
+                <div className="mb-3 sm:mb-4">
+                  <p className="text-sm text-gray-600 mb-2">
+                    팀명을 쉼표(,) 또는 줄바꿈으로 구분하여 입력하세요. 총 {currentTournament.teamCount}개 팀까지 입력 가능합니다.
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    예: 팀A, 팀B, 팀C 또는 한 줄에 하나씩 입력
+                  </p>
+                </div>
+
+                <textarea
+                  value={bulkTeamNames}
+                  onChange={(e) => setBulkTeamNames(e.target.value)}
+                  placeholder="팀명1, 팀명2, 팀명3 또는&#10;팀명1&#10;팀명2&#10;팀명3"
+                  className="w-full h-32 sm:h-40 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 
+                           focus:border-blue-500 resize-none text-sm"
+                />
+
+                <div className="mt-3 sm:mt-4 text-xs sm:text-sm text-gray-600">
+                  입력된 팀 수: {bulkTeamNames.split(/[,\n]/).filter(name => name.trim().length > 0).length}개
+                </div>
+
+                <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+                  <button
+                    onClick={() => {
+                      setShowBulkInput(false);
+                      setBulkTeamNames('');
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 
+                             transition-colors duration-200 text-sm sm:text-base font-medium"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleBulkTeamInput}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                             transition-colors duration-200 text-sm sm:text-base font-medium"
+                  >
+                    적용
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

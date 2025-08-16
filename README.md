@@ -28,8 +28,8 @@ docker compose version
 #### 1단계: 프로젝트 다운로드
 ```bash
 # Git으로 클론하거나 ZIP 파일 다운로드
-git clone https://github.com/donghoYee/tennis_tournament.git
-cd tenis_tournament
+git clone https://github.com/donghoYee/tennis.git
+cd tennis
 ```
 
 #### 2단계: 시스템 실행

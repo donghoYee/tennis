@@ -93,10 +93,26 @@ export const TournamentProvider: React.FC<TournamentProviderProps> = ({ children
         id: apiTournament.id,
         name: apiTournament.name,
         teamCount: apiTournament.team_count,
-        teams: apiTournament.teams.map((t: any) => ({
-          id: t.id,
-          name: t.name
-        })),
+        teams: apiTournament.teams
+          .map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            position: t.position || 0
+          }))
+          .sort((a: { id: string; name: string; position: number }, b: { id: string; name: string; position: number }) => {
+            // Sort by position first, then by team number extracted from ID
+            if (a.position !== b.position) {
+              return a.position - b.position;
+            }
+            
+            // Extract team number from ID (e.g., "team-1-tournament-123" -> 1)
+            const getTeamNumber = (id: string): number => {
+              const match = id.match(/team-(\d+)-/);
+              return match ? parseInt(match[1], 10) : 0;
+            };
+            
+            return getTeamNumber(a.id) - getTeamNumber(b.id);
+          }),
         matches: apiTournament.matches.map((m: any) => ({
           id: m.id,
           team1: m.team1_id ? {

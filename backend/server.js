@@ -9,12 +9,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173",
-    methods: ["GET", "POST", "PUT", "DELETE"]
+    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  credentials: true
+}));
 app.use(express.json());
 
 // Helper function to generate bracket matches
@@ -89,7 +93,8 @@ app.post('/api/tournaments', async (req, res) => {
       const team = {
         id: `team-${i + 1}-${tournamentId}`,
         tournament_id: tournamentId,
-        name: `Team ${i + 1}`
+        name: `Team ${i + 1}`,
+        position: i + 1
       };
       await teams.create(team);
       tournamentTeams.push(team);

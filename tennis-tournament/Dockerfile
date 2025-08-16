@@ -4,6 +4,14 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
+# Build arguments for Vite environment variables
+ARG VITE_API_URL
+ARG VITE_SOCKET_URL
+
+# Set environment variables for the build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SOCKET_URL=$VITE_SOCKET_URL
+
 # package.json과 package-lock.json 복사
 COPY package*.json ./
 

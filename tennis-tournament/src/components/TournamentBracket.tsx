@@ -72,32 +72,32 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
   const totalRounds = Math.max(...currentTournament.matches.map(m => m.round));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-4 sm:mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4 
-                     font-medium transition-colors duration-200"
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-2 sm:mb-4 
+                     font-medium transition-colors duration-200 text-sm sm:text-base"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
             대시보드로 돌아가기
           </button>
           
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <Trophy className="text-yellow-500" size={32} />
+          <div className="bg-white rounded-lg shadow-md p-3 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <Trophy className="text-yellow-500" size={24} />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-800">{currentTournament.name}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                  <h1 className="text-lg sm:text-2xl font-bold text-gray-800">{currentTournament.name}</h1>
+                  <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">
                     <span className="flex items-center gap-1">
-                      <Users size={16} />
+                      <Users size={14} />
                       {currentTournament.teamCount}팀
                     </span>
                     <span className="flex items-center gap-1">
-                      <Calendar size={16} />
+                      <Calendar size={14} />
                       {new Date(currentTournament.createdAt).toLocaleDateString('ko-KR')}
                     </span>
                   </div>
@@ -105,8 +105,8 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
               </div>
               
               <div className="text-right">
-                <div className="text-sm text-gray-600 mb-1">진행률</div>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-xs sm:text-sm text-gray-600 mb-0.5 sm:mb-1">진행률</div>
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">
                   {Math.round(
                     (currentTournament.matches.filter(m => m.winner).length / currentTournament.matches.length) * 100
                   )}%
@@ -117,18 +117,18 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
         </div>
 
         {/* Teams Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">참가 팀</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div className="mb-4 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2 sm:mb-4">참가 팀</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {currentTournament.teams.map((team) => (
-              <div key={team.id} className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+              <div key={team.id} className="bg-white rounded-lg p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow">
                 {editingTeam === team.id ? (
-                  <div className="space-y-2">
+                  <div>
                     <input
                       type="text"
                       value={teamNameInput}
                       onChange={(e) => setTeamNameInput(e.target.value)}
-                      className="w-full px-2 py-1 border rounded text-sm"
+                      className="w-full px-2 py-1 border rounded text-xs sm:text-sm"
                       onBlur={handleTeamNameSave}
                       onKeyPress={(e) => e.key === 'Enter' && handleTeamNameSave()}
                       autoFocus
@@ -139,8 +139,8 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
                     className="flex items-center justify-between cursor-pointer group"
                     onClick={() => handleTeamNameEdit(team)}
                   >
-                    <span className="text-sm font-medium text-gray-800">{team.name}</span>
-                    <Edit3 className="text-gray-400 group-hover:text-blue-600 transition-colors" size={14} />
+                    <span className="text-xs sm:text-sm font-medium text-gray-800 truncate">{team.name}</span>
+                    <Edit3 className="text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0" size={12} />
                   </div>
                 )}
               </div>
@@ -149,47 +149,47 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
         </div>
 
         {/* Bracket */}
-        <div className="bg-white rounded-lg shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">대진표</h2>
+        <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-6">대진표</h2>
           
           <div className="overflow-x-auto">
-            <div className="flex gap-8 min-w-max">
+            <div className="flex gap-4 sm:gap-8 min-w-max">
               {Object.entries(roundMatches)
                 .sort(([a], [b]) => parseInt(a) - parseInt(b))
                 .map(([round, matches]) => (
                 <div key={round} className="flex flex-col">
-                  <h3 className="text-lg font-semibold text-center mb-4 text-gray-700">
+                  <h3 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-gray-700">
                     {getRoundName(parseInt(round), totalRounds)}
                   </h3>
                   
-                  <div className="space-y-6">
+                  <div className="space-y-3 sm:space-y-6">
                     {matches
                       .sort((a, b) => a.matchIndex - b.matchIndex)
                       .map((match) => (
-                      <div key={match.id} className="bg-gray-50 rounded-lg p-4 min-w-[250px]">
+                      <div key={match.id} className="bg-gray-50 rounded-lg p-2 sm:p-4 min-w-[200px] sm:min-w-[250px]">
                         {/* Team 1 */}
-                        <div className={`flex items-center justify-between p-3 rounded-lg mb-2 ${
+                        <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg mb-1 sm:mb-2 ${
                           match.winner?.id === match.team1?.id ? 'bg-green-100 border-2 border-green-500' : 'bg-white border-2 border-gray-200'
                         }`}>
-                          <span className="font-medium text-gray-800">
+                          <span className="font-medium text-gray-800 text-xs sm:text-sm truncate">
                             {match.team1?.name || 'TBD'}
                           </span>
-                          <span className="text-lg font-bold text-gray-700">
+                          <span className="text-sm sm:text-lg font-bold text-gray-700 ml-2">
                             {match.score1 ?? '-'}
                           </span>
                         </div>
                         
                         {/* VS */}
-                        <div className="text-center text-gray-500 text-sm font-medium mb-2">VS</div>
+                        <div className="text-center text-gray-500 text-xs sm:text-sm font-medium mb-1 sm:mb-2">VS</div>
                         
                         {/* Team 2 */}
-                        <div className={`flex items-center justify-between p-3 rounded-lg mb-3 ${
+                        <div className={`flex items-center justify-between p-2 sm:p-3 rounded-lg mb-2 sm:mb-3 ${
                           match.winner?.id === match.team2?.id ? 'bg-green-100 border-2 border-green-500' : 'bg-white border-2 border-gray-200'
                         }`}>
-                          <span className="font-medium text-gray-800">
+                          <span className="font-medium text-gray-800 text-xs sm:text-sm truncate">
                             {match.team2?.name || 'TBD'}
                           </span>
-                          <span className="text-lg font-bold text-gray-700">
+                          <span className="text-sm sm:text-lg font-bold text-gray-700 ml-2">
                             {match.score2 ?? '-'}
                           </span>
                         </div>
@@ -198,14 +198,14 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
                         {match.team1 && match.team2 && (
                           <div className="text-center">
                             {editingMatch === match.id ? (
-                              <div className="space-y-2">
-                                <div className="flex gap-2">
+                              <div className="space-y-1 sm:space-y-2">
+                                <div className="flex gap-1 sm:gap-2">
                                   <input
                                     type="number"
                                     placeholder="점수1"
                                     value={scoreInputs.score1}
                                     onChange={(e) => setScoreInputs(prev => ({...prev, score1: e.target.value}))}
-                                    className="flex-1 px-2 py-1 border rounded text-sm"
+                                    className="flex-1 px-1 sm:px-2 py-1 border rounded text-xs sm:text-sm"
                                     min="0"
                                   />
                                   <input
@@ -213,13 +213,13 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
                                     placeholder="점수2"
                                     value={scoreInputs.score2}
                                     onChange={(e) => setScoreInputs(prev => ({...prev, score2: e.target.value}))}
-                                    className="flex-1 px-2 py-1 border rounded text-sm"
+                                    className="flex-1 px-1 sm:px-2 py-1 border rounded text-xs sm:text-sm"
                                     min="0"
                                   />
                                 </div>
                                 <button
                                   onClick={handleMatchSave}
-                                  className="w-full px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                                  className="w-full px-2 sm:px-3 py-1 bg-blue-600 text-white rounded text-xs sm:text-sm hover:bg-blue-700"
                                 >
                                   저장
                                 </button>
@@ -227,7 +227,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
                             ) : (
                               <button
                                 onClick={() => handleMatchEdit(match)}
-                                className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                                className="text-blue-600 hover:text-blue-700 text-xs sm:text-sm font-medium transition-colors"
                               >
                                 점수 입력
                               </button>

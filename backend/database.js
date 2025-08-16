@@ -24,8 +24,52 @@ const initializeDatabase = () => {
         id TEXT PRIMARY KEY,
         tournament_id TEXT NOT NULL,
         name TEXT NOT NULL,
+        position INTEGER DEFAULT 0,
         FOREIGN KEY (tournament_id) REFERENCES tournaments (id) ON DELETE CASCADE
       )`);
+
+      // Add position column if it doesn't exist (migration)
+      db.run(`PRAGMA table_info(teams)`, (err, rows) => {
+        if (err) {
+          console.error('Error checking table info:', err);
+          return;
+        }
+        
+        // Check if position column exists
+        db.all(`PRAGMA table_info(teams)`, (err, columns) => {
+          if (err) {
+            console.error('Error getting column info:', err);
+            return;
+          }
+          
+          const hasPositionColumn = columns.some(col => col.name === 'position');
+          
+          if (!hasPositionColumn) {
+            console.log('Adding position column to teams table...');
+            db.run(`ALTER TABLE teams ADD COLUMN position INTEGER DEFAULT 0`, (alterErr) => {
+              if (alterErr) {
+                console.error('Error adding position column:', alterErr);
+                return;
+              }
+              
+              console.log('Position column added successfully');
+              
+              // Update existing teams with position based on their team number
+              db.run(`UPDATE teams SET position = 
+                CAST(substr(id, 6, instr(substr(id, 6), '-') - 1) AS INTEGER)
+                WHERE position = 0`, (updateErr) => {
+                if (updateErr) {
+                  console.error('Error updating team positions:', updateErr);
+                } else {
+                  console.log('Team positions updated successfully');
+                }
+              });
+            });
+          } else {
+            console.log('Position column already exists');
+          }
+        });
+      });
 
       // Matches table
       db.run(`CREATE TABLE IF NOT EXISTS matches (
@@ -111,7 +155,7 @@ const teams = {
   getByTournamentId: (tournamentId) => {
     return new Promise((resolve, reject) => {
       db.all(
-        'SELECT * FROM teams WHERE tournament_id = ? ORDER BY id',
+        'SELECT * FROM teams WHERE tournament_id = ? ORDER BY position, id',
         [tournamentId],
         (err, rows) => {
           if (err) reject(err);
@@ -123,13 +167,13 @@ const teams = {
 
   create: (team) => {
     return new Promise((resolve, reject) => {
-      const { id, tournament_id, name } = team;
+      const { id, tournament_id, name, position } = team;
       db.run(
-        'INSERT INTO teams (id, tournament_id, name) VALUES (?, ?, ?)',
-        [id, tournament_id, name],
+        'INSERT INTO teams (id, tournament_id, name, position) VALUES (?, ?, ?, ?)',
+        [id, tournament_id, name, position || 0],
         function(err) {
           if (err) reject(err);
-          else resolve({ id, tournament_id, name });
+          else resolve({ id, tournament_id, name, position: position || 0 });
         }
       );
     });

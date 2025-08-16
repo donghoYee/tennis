@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # 백엔드 서비스
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5678:3001"  # 외부 nginx에서 접근 가능하도록 포트 노출
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CORS_ORIGIN=https://cnu-tennis.org
+    volumes:
+      - backend_data:/app/data
+    networks:
+      - tennis-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/tournaments"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 프론트엔드 서비스
+  frontend:
+    build:
+      context: ./tennis-tournament
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=https://cnu-tennis.org/api
+        - VITE_SOCKET_URL=https://cnu-tennis.org
+    ports:
+      - "6789:80"  # 외부 nginx에서 접근 가능하도록 포트 노출
+    depends_on:
+      - backend
+    networks:
+      - tennis-network
+    restart: unless-stopped
+
+networks:
+  tennis-network:
+    driver: bridge
+
+volumes:
+  backend_data:

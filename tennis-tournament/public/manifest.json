@@ -1,0 +1,51 @@
+{
+  "name": "테니스 토너먼트 관리 시스템",
+  "short_name": "Tennis Tournament",
+  "description": "실시간 다중 사용자 테니스 대회 대진표 관리 시스템",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f0f9ff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ko",
+  "categories": ["sports", "games", "utilities"],
+  "icons": [
+    {
+      "src": "/trophy.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/tennis-ball.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/trophy.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "테니스 토너먼트 대시보드"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "새 대회 만들기",
+      "short_name": "새 대회",
+      "description": "새로운 테니스 대회를 빠르게 생성",
+      "url": "/?action=create",
+      "icons": [
+        {
+          "src": "/trophy.svg",
+          "sizes": "any",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ]
+}

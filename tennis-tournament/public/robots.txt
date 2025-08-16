@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# 사이트맵 (실제 배포시 도메인 변경 필요)
+Sitemap: http://localhost:5173/sitemap.xml
+
+# 크롤링 속도 조절
+Crawl-delay: 1

@@ -1,6 +1,7 @@
-import React from 'react';
-import { Plus, Trophy, Calendar, Users, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Trophy, Calendar, Users, Trash2, Lock, LogOut } from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
+import { useAuth } from '../context/AuthContext';
 import type { Tournament } from '../types/tournament';
 
 interface DashboardProps {
@@ -9,6 +10,10 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onCreateTournament }) => {
   const { tournaments, selectTournament, deleteTournament } = useTournament();
+  const { isAdmin, login, logout } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   const handleTournamentClick = (tournament: Tournament) => {
     selectTournament(tournament);
@@ -21,30 +26,75 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateTournament }) => {
     }
   };
 
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = login(password);
+    if (success) {
+      setShowLoginModal(false);
+      setPassword('');
+      setLoginError('');
+    } else {
+      setLoginError('잘못된 비밀번호입니다.');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-4 sm:mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-1 sm:mb-2 flex items-center justify-center gap-2 sm:gap-3">
-            <Trophy className="text-yellow-500" size={28} />
-            <span className="hidden sm:inline">테니스 토너먼트 관리</span>
-            <span className="sm:hidden">토너먼트 관리</span>
-          </h1>
-          <p className="text-sm sm:text-base text-gray-600">대회를 생성하고 관리하세요</p>
+        <div className="mb-4 sm:mb-8">
+          {/* Admin Controls */}
+          <div className="flex justify-end mb-2 sm:mb-4">
+            {isAdmin ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 text-sm text-red-600 hover:text-red-700 
+                         hover:bg-red-50 rounded-lg transition-colors duration-200"
+              >
+                <LogOut size={16} />
+                관리자 로그아웃
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-2 text-sm text-blue-600 hover:text-blue-700 
+                         hover:bg-blue-50 rounded-lg transition-colors duration-200"
+              >
+                <Lock size={16} />
+                관리자로 로그인하기
+              </button>
+            )}
+          </div>
+          
+          <div className="text-center">
+            <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-1 sm:mb-2 flex items-center justify-center gap-2 sm:gap-3">
+              <Trophy className="text-yellow-500" size={28} />
+              <span className="hidden sm:inline">테니스 토너먼트 관리</span>
+              <span className="sm:hidden">토너먼트 관리</span>
+            </h1>
+            <p className="text-sm sm:text-base text-gray-600">
+              {isAdmin ? '대회를 생성하고 관리하세요' : '토너먼트 대진표를 확인하세요'}
+            </p>
+          </div>
         </div>
 
-        {/* Create Tournament Button */}
-        <div className="mb-4 sm:mb-8 text-center">
-          <button
-            onClick={onCreateTournament}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:px-8 sm:py-4 rounded-lg font-semibold 
-                     shadow-lg transform transition duration-200 hover:scale-105 flex items-center gap-2 sm:gap-3 mx-auto text-sm sm:text-base"
-          >
-            <Plus size={20} />
-            새 대회 만들기
-          </button>
-        </div>
+        {/* Create Tournament Button - 관리자만 표시 */}
+        {isAdmin && (
+          <div className="mb-4 sm:mb-8 text-center">
+            <button
+              onClick={onCreateTournament}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 sm:px-8 sm:py-4 rounded-lg font-semibold 
+                       shadow-lg transform transition duration-200 hover:scale-105 flex items-center gap-2 sm:gap-3 mx-auto text-sm sm:text-base"
+            >
+              <Plus size={20} />
+              새 리그 만들기
+            </button>
+          </div>
+        )}
 
         {/* Tournaments Grid */}
         {tournaments.length === 0 ? (
@@ -62,15 +112,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateTournament }) => {
                 className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 
                          cursor-pointer transform hover:scale-105 relative group"
               >
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => handleDeleteTournament(e, tournament.id)}
-                  className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-500 
-                           opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                           hover:bg-red-50 rounded-full"
-                >
-                  <Trash2 size={18} />
-                </button>
+                {/* Delete Button - 관리자만 표시 */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => handleDeleteTournament(e, tournament.id)}
+                    className="absolute top-3 right-3 p-2 text-gray-400 hover:text-red-500 
+                             opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                             hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                )}
 
                 <div className="p-3 sm:p-6">
                   {/* Tournament Status */}
@@ -145,6 +197,60 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateTournament }) => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Login Modal */}
+        {showLoginModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">관리자 로그인</h3>
+                
+                <form onSubmit={handleLogin}>
+                  <div className="mb-4">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                      비밀번호
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 
+                               focus:border-blue-500"
+                      placeholder="관리자 비밀번호를 입력하세요"
+                      autoFocus
+                    />
+                    {loginError && (
+                      <p className="mt-2 text-sm text-red-600">{loginError}</p>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowLoginModal(false);
+                        setPassword('');
+                        setLoginError('');
+                      }}
+                      className="flex-1 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 
+                               border border-gray-300 rounded-lg transition-colors duration-200"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg 
+                               transition-colors duration-200"
+                    >
+                      로그인
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         )}
       </div>

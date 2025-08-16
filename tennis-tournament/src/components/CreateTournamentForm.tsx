@@ -62,7 +62,7 @@ const CreateTournamentForm: React.FC<CreateTournamentFormProps> = ({ onBack }) =
           <div className="text-center">
             <h1 className="text-xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2 flex items-center justify-center gap-2 sm:gap-3">
               <Trophy className="text-yellow-500" size={28} />
-              새 대회 만들기
+              새 리그 만들기
             </h1>
             <p className="text-sm sm:text-base text-gray-600">대회 정보를 입력하여 토너먼트를 시작하세요</p>
           </div>

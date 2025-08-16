@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TournamentProvider, useTournament } from './context/TournamentContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './components/Dashboard';
 import CreateTournamentForm from './components/CreateTournamentForm';
 import TournamentBracket from './components/TournamentBracket';
@@ -10,6 +11,7 @@ type AppView = 'dashboard' | 'createTournament' | 'tournament';
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const { currentTournament, isCreatingTournament, clearCurrentTournament } = useTournament();
+  const { isAdmin } = useAuth();
 
   // Auto-navigate to tournament view when a tournament is selected
   React.useEffect(() => {
@@ -19,7 +21,9 @@ const AppContent: React.FC = () => {
   }, [currentTournament, currentView]);
 
   const handleCreateTournament = () => {
-    setCurrentView('createTournament');
+    if (isAdmin) {
+      setCurrentView('createTournament');
+    }
   };
 
   const handleBackToDashboard = () => {
@@ -34,7 +38,7 @@ const AppContent: React.FC = () => {
 
   switch (currentView) {
     case 'createTournament':
-      return <CreateTournamentForm onBack={handleBackToDashboard} />;
+      return isAdmin ? <CreateTournamentForm onBack={handleBackToDashboard} /> : <Dashboard onCreateTournament={handleCreateTournament} />;
     case 'tournament':
       return <TournamentBracket onBack={handleBackToDashboard} />;
     default:
@@ -44,9 +48,11 @@ const AppContent: React.FC = () => {
 
 function App() {
   return (
-    <TournamentProvider>
-      <AppContent />
-    </TournamentProvider>
+    <AuthProvider>
+      <TournamentProvider>
+        <AppContent />
+      </TournamentProvider>
+    </AuthProvider>
   );
 }
 

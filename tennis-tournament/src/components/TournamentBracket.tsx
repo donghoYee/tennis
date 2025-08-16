@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Edit3, Trophy, Users, Calendar, FileText } from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
+import { useAuth } from '../context/AuthContext';
 import type { Match, Team } from '../types/tournament';
 
 interface TournamentBracketProps {
@@ -9,6 +10,7 @@ interface TournamentBracketProps {
 
 const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
   const { currentTournament, updateTeamName, updateMatchScore } = useTournament();
+  const { isAdmin } = useAuth();
   const [editingTeam, setEditingTeam] = useState<string | null>(null);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [teamNameInput, setTeamNameInput] = useState('');
@@ -151,19 +153,20 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Teams Section */}
-        <div className="mb-4 sm:mb-8">
-          <div className="flex items-center justify-between mb-2 sm:mb-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-800">참가 팀</h2>
-            <button
-              onClick={handleBulkInputOpen}
-              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                       transition-colors duration-200 text-xs sm:text-sm font-medium"
-            >
-              <FileText size={14} />
-              팀명 일괄 입력
-            </button>
-          </div>
+        {/* Teams Section - 관리자만 표시 */}
+        {isAdmin && (
+          <div className="mb-4 sm:mb-8">
+            <div className="flex items-center justify-between mb-2 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">참가 팀</h2>
+              <button
+                onClick={handleBulkInputOpen}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                         transition-colors duration-200 text-xs sm:text-sm font-medium"
+              >
+                <FileText size={14} />
+                팀명 일괄 입력
+              </button>
+            </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {currentTournament.teams.map((team) => (
               <div key={team.id} className="bg-white rounded-lg p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow">
@@ -191,7 +194,8 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
               </div>
             ))}
           </div>
-        </div>
+          </div>
+        )}
 
         {/* Bracket */}
         <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6">
@@ -288,8 +292,8 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Bulk Team Input Modal */}
-        {showBulkInput && (
+        {/* Bulk Team Input Modal - 관리자만 표시 */}
+        {isAdmin && showBulkInput && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="p-4 sm:p-6">

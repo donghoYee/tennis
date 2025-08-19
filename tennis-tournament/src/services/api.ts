@@ -276,6 +276,68 @@ class ApiService {
     }
   }
 
+  // Export qualifier results as PDF
+  async exportQualifierResultsPDF(qualifierId: string, qualifierName: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/qualifiers/${qualifierId}/export-pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export qualifier PDF');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${qualifierName}_예선전_결과.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF export error:', error);
+      throw error;
+    }
+  }
+
+  // Export tournament results as PDF
+  async exportTournamentResultsPDF(tournamentId: string, tournamentName: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}/export-pdf`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export tournament PDF');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${tournamentName}_토너먼트_결과.pdf`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Tournament PDF export error:', error);
+      throw error;
+    }
+  }
+
   disconnect() {
     this.socket.disconnect();
   }

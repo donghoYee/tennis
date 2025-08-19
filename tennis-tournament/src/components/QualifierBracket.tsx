@@ -93,6 +93,15 @@ const QualifierBracket: React.FC<QualifierBracketProps> = ({ onBack }) => {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      await apiService.exportQualifierResultsPDF(currentQualifier.id, currentQualifier.name);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert('PDF 익스포트에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   const completedMatches = currentQualifier.matches.filter(m => m.winner).length;
   const totalMatches = currentQualifier.matches.length;
   const progressPercentage = totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
@@ -159,7 +168,7 @@ const QualifierBracket: React.FC<QualifierBracketProps> = ({ onBack }) => {
                   className="flex items-center gap-2 sm:px-4 sm:py-2 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors sm:text-sm text-xs"
                 >
                   <Download className="sm:w-4 sm:h-4 w-3 h-3" />
-                  결과 익스포트
+                  Excel 익스포트
                 </button>
               </div>
             </div>
@@ -208,7 +217,17 @@ const QualifierBracket: React.FC<QualifierBracketProps> = ({ onBack }) => {
 
         {/* Matches Section */}
         <div className="bg-white rounded-lg shadow-lg sm:p-6 p-4">
-          <h2 className="sm:text-xl text-lg font-bold text-gray-900 mb-4">예선전 경기</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="sm:text-xl text-lg font-bold text-gray-900">예선전 경기</h2>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
+                       transition-colors duration-200 text-xs sm:text-sm font-medium"
+            >
+              <Download size={14} />
+              PDF 다운로드
+            </button>
+          </div>
           
           {/* Grid Layout for Matches */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

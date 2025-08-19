@@ -96,6 +96,15 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      await apiService.exportTournamentResultsPDF(currentTournament.id, currentTournament.name);
+    } catch (error) {
+      console.error('PDF export failed:', error);
+      alert('PDF 익스포트에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   const groupMatchesByRound = () => {
     const roundMatches: { [key: number]: Match[] } = {};
     currentTournament.matches.forEach(match => {
@@ -183,7 +192,7 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
                            transition-colors duration-200 text-xs sm:text-sm font-medium"
                 >
                   <Download size={14} />
-                  결과 익스포트
+                  Excel 익스포트
                 </button>
               </div>
             </div>
@@ -219,7 +228,17 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
 
         {/* Bracket */}
         <div className="bg-white rounded-lg shadow-lg p-3 sm:p-6">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-6">대진표</h2>
+          <div className="flex items-center justify-between mb-3 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-800">대진표</h2>
+            <button
+              onClick={handleExportPDF}
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 
+                       transition-colors duration-200 text-xs sm:text-sm font-medium"
+            >
+              <Download size={14} />
+              PDF 다운로드
+            </button>
+          </div>
           
           <div className="overflow-x-auto">
             <div className="flex gap-4 sm:gap-8 min-w-max">

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Edit3, Trophy, Users, Calendar, FileText } from 'lucide-react';
+import { ArrowLeft, Edit3, Trophy, Users, Calendar, FileText, Download } from 'lucide-react';
 import { useTournament } from '../context/TournamentContext';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import type { Match, Team } from '../types/tournament';
 
 interface TournamentBracketProps {
@@ -86,6 +87,15 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
     setShowBulkInput(true);
   };
 
+  const handleExportResults = async () => {
+    try {
+      await apiService.exportTournamentResults(currentTournament.id, currentTournament.name);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('익스포트에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   const groupMatchesByRound = () => {
     const roundMatches: { [key: number]: Match[] } = {};
     currentTournament.matches.forEach(match => {
@@ -158,14 +168,24 @@ const TournamentBracket: React.FC<TournamentBracketProps> = ({ onBack }) => {
           <div className="mb-4 sm:mb-8">
             <div className="flex items-center justify-between mb-2 sm:mb-4">
               <h2 className="text-lg sm:text-xl font-bold text-gray-800">참가 팀</h2>
-              <button
-                onClick={handleBulkInputOpen}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                         transition-colors duration-200 text-xs sm:text-sm font-medium"
-              >
-                <FileText size={14} />
-                팀명 일괄 입력
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  onClick={handleBulkInputOpen}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                           transition-colors duration-200 text-xs sm:text-sm font-medium"
+                >
+                  <FileText size={14} />
+                  팀명 일괄 입력
+                </button>
+                <button
+                  onClick={handleExportResults}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 
+                           transition-colors duration-200 text-xs sm:text-sm font-medium"
+                >
+                  <Download size={14} />
+                  결과 익스포트
+                </button>
+              </div>
             </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
             {currentTournament.teams.map((team) => (

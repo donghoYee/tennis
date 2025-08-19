@@ -400,6 +400,107 @@ app.get('/api/qualifiers/:id/export', async (req, res) => {
   }
 });
 
+// Tournament Export Route
+app.get('/api/tournaments/:id/export', async (req, res) => {
+  try {
+    const tournament = await tournaments.getById(req.params.id);
+    if (!tournament) {
+      return res.status(404).json({ error: 'Tournament not found' });
+    }
+
+    const tournamentMatches = await matches.getByTournamentId(req.params.id);
+    
+    // Prepare data for Excel export
+    const exportData = [];
+    
+    // Group matches by round
+    const matchesByRound = {};
+    tournamentMatches.forEach(match => {
+      if (!matchesByRound[match.round]) {
+        matchesByRound[match.round] = [];
+      }
+      matchesByRound[match.round].push(match);
+    });
+
+    // Round names mapping
+    const getRoundName = (round, totalRounds) => {
+      if (round === totalRounds) return '결승';
+      if (round === totalRounds - 1) return '준결승';
+      if (round === totalRounds - 2) return '준준결승';
+      if (round === 1) return '1라운드';
+      return `${round}라운드`;
+    };
+
+    const totalRounds = Math.max(...Object.keys(matchesByRound).map(Number));
+
+    // Process each round
+    Object.keys(matchesByRound)
+      .sort((a, b) => Number(a) - Number(b))
+      .forEach(round => {
+        const roundNumber = Number(round);
+        const roundName = getRoundName(roundNumber, totalRounds);
+        const roundMatches = matchesByRound[round];
+
+        roundMatches
+          .filter(match => match.score1 !== null && match.score2 !== null && match.winner_id)
+          .sort((a, b) => a.match_index - b.match_index)
+          .forEach((match, index) => {
+            // Add winner row
+            const winnerTeamName = match.winner_id === match.team1_id ? match.team1_name : match.team2_name;
+            const winnerScore = match.winner_id === match.team1_id ? match.score1 : match.score2;
+            exportData.push({
+              '라운드': roundName,
+              '경기번호': index + 1,
+              '결과': '승리',
+              '팀명': winnerTeamName,
+              '점수': winnerScore
+            });
+            
+            // Add loser row
+            const loserTeamName = match.winner_id === match.team1_id ? match.team2_name : match.team1_name;
+            const loserScore = match.winner_id === match.team1_id ? match.score2 : match.score1;
+            exportData.push({
+              '라운드': roundName,
+              '경기번호': index + 1,
+              '결과': '패배',
+              '팀명': loserTeamName,
+              '점수': loserScore
+            });
+          });
+      });
+
+    // Create Excel workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Auto-size columns
+    const colWidths = [
+      { wch: 12 }, // 라운드
+      { wch: 10 }, // 경기번호
+      { wch: 8 },  // 결과
+      { wch: 20 }, // 팀명
+      { wch: 8 }   // 점수
+    ];
+    ws['!cols'] = colWidths;
+    
+    XLSX.utils.book_append_sheet(wb, ws, '토너먼트 결과');
+    
+    // Generate buffer
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for file download
+    const fileName = `${tournament.name}_토너먼트_결과.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+    res.setHeader('Content-Length', buffer.length);
+    
+    res.send(buffer);
+  } catch (error) {
+    console.error('Tournament export error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Match Routes
 app.put('/api/matches/:id/score', async (req, res) => {
   try {

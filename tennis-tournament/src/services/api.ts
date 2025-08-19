@@ -245,6 +245,37 @@ class ApiService {
     }
   }
 
+  // Export tournament results as Excel
+  async exportTournamentResults(tournamentId: string, tournamentName: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tournaments/${tournamentId}/export`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export tournament results');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${tournamentName}_토너먼트_결과.xlsx`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Tournament export error:', error);
+      throw error;
+    }
+  }
+
   disconnect() {
     this.socket.disconnect();
   }

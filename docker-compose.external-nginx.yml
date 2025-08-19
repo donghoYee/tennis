@@ -39,9 +39,26 @@ services:
       - tennis-network
     restart: unless-stopped
 
+  # 백업 서비스
+  backup:
+    build:
+      context: ./backup
+      dockerfile: Dockerfile
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker 소켓 접근
+      - backup_data:/backups  # 백업 파일 저장
+    depends_on:
+      - backend
+    networks:
+      - tennis-network
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Seoul  # 타임존 설정
+
 networks:
   tennis-network:
     driver: bridge
 
 volumes:
   backend_data:
+  backup_data:

@@ -86,6 +86,40 @@ const initializeDatabase = () => {
         FOREIGN KEY (team1_id) REFERENCES teams (id),
         FOREIGN KEY (team2_id) REFERENCES teams (id),
         FOREIGN KEY (winner_id) REFERENCES teams (id)
+      )`);
+
+      // Qualifiers table
+      db.run(`CREATE TABLE IF NOT EXISTS qualifiers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        team_count INTEGER NOT NULL,
+        is_active BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )`);
+
+      // Qualifier teams table
+      db.run(`CREATE TABLE IF NOT EXISTS qualifier_teams (
+        id TEXT PRIMARY KEY,
+        qualifier_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        position INTEGER DEFAULT 0,
+        FOREIGN KEY (qualifier_id) REFERENCES qualifiers (id) ON DELETE CASCADE
+      )`);
+
+      // Qualifier matches table
+      db.run(`CREATE TABLE IF NOT EXISTS qualifier_matches (
+        id TEXT PRIMARY KEY,
+        qualifier_id TEXT NOT NULL,
+        team1_id TEXT,
+        team2_id TEXT,
+        score1 INTEGER,
+        score2 INTEGER,
+        winner_id TEXT,
+        match_index INTEGER NOT NULL,
+        FOREIGN KEY (qualifier_id) REFERENCES qualifiers (id) ON DELETE CASCADE,
+        FOREIGN KEY (team1_id) REFERENCES qualifier_teams (id),
+        FOREIGN KEY (team2_id) REFERENCES qualifier_teams (id),
+        FOREIGN KEY (winner_id) REFERENCES qualifier_teams (id)
       )`, (err) => {
         if (err) {
           reject(err);
@@ -256,10 +290,158 @@ const matches = {
   }
 };
 
+// Qualifier operations
+const qualifiers = {
+  getAll: () => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT q.*, 
+               COUNT(CASE WHEN qm.winner_id IS NOT NULL THEN 1 END) as completed_matches,
+               COUNT(qm.id) as total_matches
+        FROM qualifiers q
+        LEFT JOIN qualifier_matches qm ON q.id = qm.qualifier_id
+        GROUP BY q.id
+        ORDER BY q.created_at DESC
+      `, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  },
+
+  getById: (id) => {
+    return new Promise((resolve, reject) => {
+      db.get('SELECT * FROM qualifiers WHERE id = ?', [id], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+  },
+
+  create: (qualifier) => {
+    return new Promise((resolve, reject) => {
+      const { id, name, team_count } = qualifier;
+      db.run(
+        'INSERT INTO qualifiers (id, name, team_count) VALUES (?, ?, ?)',
+        [id, name, team_count],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ id, name, team_count });
+        }
+      );
+    });
+  },
+
+  delete: (id) => {
+    return new Promise((resolve, reject) => {
+      db.run('DELETE FROM qualifiers WHERE id = ?', [id], function(err) {
+        if (err) reject(err);
+        else resolve({ deleted: this.changes });
+      });
+    });
+  }
+};
+
+// Qualifier team operations
+const qualifierTeams = {
+  getByQualifierId: (qualifierId) => {
+    return new Promise((resolve, reject) => {
+      db.all(
+        'SELECT * FROM qualifier_teams WHERE qualifier_id = ? ORDER BY position, id',
+        [qualifierId],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
+  },
+
+  create: (team) => {
+    return new Promise((resolve, reject) => {
+      const { id, qualifier_id, name, position } = team;
+      db.run(
+        'INSERT INTO qualifier_teams (id, qualifier_id, name, position) VALUES (?, ?, ?, ?)',
+        [id, qualifier_id, name, position || 0],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ id, qualifier_id, name, position: position || 0 });
+        }
+      );
+    });
+  },
+
+  updateName: (id, name) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE qualifier_teams SET name = ? WHERE id = ?',
+        [name, id],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ updated: this.changes });
+        }
+      );
+    });
+  }
+};
+
+// Qualifier match operations
+const qualifierMatches = {
+  getByQualifierId: (qualifierId) => {
+    return new Promise((resolve, reject) => {
+      db.all(`
+        SELECT qm.*, 
+               qt1.name as team1_name,
+               qt2.name as team2_name,
+               qw.name as winner_name
+        FROM qualifier_matches qm
+        LEFT JOIN qualifier_teams qt1 ON qm.team1_id = qt1.id
+        LEFT JOIN qualifier_teams qt2 ON qm.team2_id = qt2.id
+        LEFT JOIN qualifier_teams qw ON qm.winner_id = qw.id
+        WHERE qm.qualifier_id = ?
+        ORDER BY qm.match_index
+      `, [qualifierId], (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows);
+      });
+    });
+  },
+
+  create: (match) => {
+    return new Promise((resolve, reject) => {
+      const { id, qualifier_id, team1_id, team2_id, match_index } = match;
+      db.run(
+        'INSERT INTO qualifier_matches (id, qualifier_id, team1_id, team2_id, match_index) VALUES (?, ?, ?, ?, ?)',
+        [id, qualifier_id, team1_id, team2_id, match_index],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ id, qualifier_id, team1_id, team2_id, match_index });
+        }
+      );
+    });
+  },
+
+  updateScore: (id, score1, score2, winnerId) => {
+    return new Promise((resolve, reject) => {
+      db.run(
+        'UPDATE qualifier_matches SET score1 = ?, score2 = ?, winner_id = ? WHERE id = ?',
+        [score1, score2, winnerId, id],
+        function(err) {
+          if (err) reject(err);
+          else resolve({ updated: this.changes });
+        }
+      );
+    });
+  }
+};
+
 module.exports = {
   db,
   initializeDatabase,
   tournaments,
   teams,
-  matches
+  matches,
+  qualifiers,
+  qualifierTeams,
+  qualifierMatches
 };

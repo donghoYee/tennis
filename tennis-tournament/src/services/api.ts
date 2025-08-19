@@ -32,6 +32,23 @@ class ApiService {
     this.socket.on('match_updated', callback);
   }
 
+  // Qualifier socket event listeners
+  onQualifierCreated(callback: (qualifier: any) => void) {
+    this.socket.on('qualifier_created', callback);
+  }
+
+  onQualifierDeleted(callback: (data: { id: string }) => void) {
+    this.socket.on('qualifier_deleted', callback);
+  }
+
+  onQualifierTeamUpdated(callback: (data: { id: string; name: string }) => void) {
+    this.socket.on('qualifier_team_updated', callback);
+  }
+
+  onQualifierMatchUpdated(callback: (data: any) => void) {
+    this.socket.on('qualifier_match_updated', callback);
+  }
+
   joinTournament(tournamentId: string) {
     this.socket.emit('join_tournament', tournamentId);
   }
@@ -116,6 +133,115 @@ class ApiService {
     
     if (!response.ok) {
       throw new Error('Failed to update match score');
+    }
+  }
+
+  // Qualifier API calls
+  async getQualifiers(): Promise<any[]> {
+    const response = await fetch(`${API_BASE_URL}/qualifiers`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch qualifiers');
+    }
+    return response.json();
+  }
+
+  async getQualifier(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/qualifiers/${id}`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch qualifier');
+    }
+    return response.json();
+  }
+
+  async createQualifier(name: string, teamCount: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/qualifiers`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name, teamCount }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create qualifier');
+    }
+    return response.json();
+  }
+
+  async deleteQualifier(id: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/qualifiers/${id}`, {
+      method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete qualifier');
+    }
+  }
+
+  // Qualifier team API calls
+  async updateQualifierTeamName(teamId: string, name: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/qualifier-teams/${teamId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update qualifier team name');
+    }
+  }
+
+  // Qualifier match API calls
+  async updateQualifierMatchScore(
+    matchId: string, 
+    score1: number, 
+    score2: number, 
+    winnerId: string, 
+    qualifierId: string
+  ): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/qualifier-matches/${matchId}/score`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ score1, score2, winnerId, qualifierId }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update qualifier match score');
+    }
+  }
+
+  // Export qualifier results as Excel
+  async exportQualifierResults(qualifierId: string, qualifierName: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/qualifiers/${qualifierId}/export`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export qualifier results');
+      }
+
+      // Create blob from response
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${qualifierName}_예선전_결과.xlsx`;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Export error:', error);
+      throw error;
     }
   }
 

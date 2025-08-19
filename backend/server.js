@@ -3,7 +3,8 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
-const { initializeDatabase, tournaments, teams, matches } = require('./database');
+const { initializeDatabase, tournaments, teams, matches, qualifiers, qualifierTeams, qualifierMatches } = require('./database');
+const XLSX = require('xlsx');
 
 const app = express();
 const server = http.createServer(app);
@@ -178,6 +179,223 @@ app.put('/api/teams/:id', async (req, res) => {
     
     res.json({ success: true });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Qualifier Routes
+app.get('/api/qualifiers', async (req, res) => {
+  try {
+    const qualifierList = await qualifiers.getAll();
+    res.json(qualifierList);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/qualifiers/:id', async (req, res) => {
+  try {
+    const qualifier = await qualifiers.getById(req.params.id);
+    if (!qualifier) {
+      return res.status(404).json({ error: 'Qualifier not found' });
+    }
+
+    const qualifierTeamsList = await qualifierTeams.getByQualifierId(req.params.id);
+    const qualifierMatchesList = await qualifierMatches.getByQualifierId(req.params.id);
+
+    res.json({
+      ...qualifier,
+      teams: qualifierTeamsList,
+      matches: qualifierMatchesList
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/qualifiers', async (req, res) => {
+  try {
+    const { name, teamCount } = req.body;
+    const qualifierId = `qualifier-${Date.now()}`;
+
+    // Create qualifier
+    await qualifiers.create({
+      id: qualifierId,
+      name,
+      team_count: teamCount
+    });
+
+    // Create teams
+    const qualifierTeamsList = [];
+    for (let i = 0; i < teamCount; i++) {
+      const team = {
+        id: `qteam-${i + 1}-${qualifierId}`,
+        qualifier_id: qualifierId,
+        name: `Team ${i + 1}`,
+        position: i + 1
+      };
+      await qualifierTeams.create(team);
+      qualifierTeamsList.push(team);
+    }
+
+    // Create qualifier matches (pair teams for head-to-head matches)
+    const qualifierMatchesList = [];
+    for (let i = 0; i < teamCount; i += 2) {
+      if (i + 1 < teamCount) {
+        const matchData = {
+          id: `qmatch-${Math.floor(i / 2) + 1}-${qualifierId}`,
+          qualifier_id: qualifierId,
+          team1_id: qualifierTeamsList[i].id,
+          team2_id: qualifierTeamsList[i + 1].id,
+          match_index: Math.floor(i / 2)
+        };
+        await qualifierMatches.create(matchData);
+        qualifierMatchesList.push(matchData);
+      }
+    }
+
+    // Broadcast qualifier creation
+    io.emit('qualifier_created', {
+      id: qualifierId,
+      name,
+      team_count: teamCount
+    });
+
+    res.status(201).json({
+      id: qualifierId,
+      name,
+      teamCount,
+      teams: qualifierTeamsList,
+      matches: qualifierMatchesList
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/qualifiers/:id', async (req, res) => {
+  try {
+    await qualifiers.delete(req.params.id);
+    
+    // Broadcast qualifier deletion
+    io.emit('qualifier_deleted', { id: req.params.id });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Qualifier Team Routes
+app.put('/api/qualifier-teams/:id', async (req, res) => {
+  try {
+    const { name } = req.body;
+    await qualifierTeams.updateName(req.params.id, name);
+    
+    // Broadcast qualifier team name update
+    io.emit('qualifier_team_updated', {
+      id: req.params.id,
+      name
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Qualifier Match Routes
+app.put('/api/qualifier-matches/:id/score', async (req, res) => {
+  try {
+    const { score1, score2, winnerId, qualifierId } = req.body;
+    
+    await qualifierMatches.updateScore(req.params.id, score1, score2, winnerId);
+    
+    // Broadcast qualifier match update
+    io.emit('qualifier_match_updated', {
+      matchId: req.params.id,
+      qualifierId,
+      score1,
+      score2,
+      winnerId
+    });
+    
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Qualifier Export Route
+app.get('/api/qualifiers/:id/export', async (req, res) => {
+  try {
+    const qualifier = await qualifiers.getById(req.params.id);
+    if (!qualifier) {
+      return res.status(404).json({ error: 'Qualifier not found' });
+    }
+
+    const qualifierMatchesList = await qualifierMatches.getByQualifierId(req.params.id);
+    
+    // Prepare data for Excel export
+    const exportData = [];
+    
+    qualifierMatchesList.forEach(match => {
+      if (match.score1 !== null && match.score2 !== null && match.winner_id) {
+        // Add winner row
+        const winnerTeamName = match.winner_id === match.team1_id ? match.team1_name : match.team2_name;
+        const winnerScore = match.winner_id === match.team1_id ? match.score1 : match.score2;
+        exportData.push({
+          '경기번호-결과': `${match.match_index + 1}-승리`,
+          '팀명': winnerTeamName,
+          '점수': winnerScore
+        });
+        
+        // Add loser row
+        const loserTeamName = match.winner_id === match.team1_id ? match.team2_name : match.team1_name;
+        const loserScore = match.winner_id === match.team1_id ? match.score2 : match.score1;
+        exportData.push({
+          '경기번호-결과': `${match.match_index + 1}-패배`,
+          '팀명': loserTeamName,
+          '점수': loserScore
+        });
+      }
+    });
+
+    // Sort by match number
+    exportData.sort((a, b) => {
+      const matchA = parseInt(a['경기번호-결과'].split('-')[0]);
+      const matchB = parseInt(b['경기번호-결과'].split('-')[0]);
+      if (matchA !== matchB) return matchA - matchB;
+      // Within same match, winner comes first
+      return a['경기번호-결과'].includes('승리') ? -1 : 1;
+    });
+
+    // Create Excel workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Auto-size columns
+    const colWidths = [
+      { wch: 15 }, // 경기번호-결과
+      { wch: 20 }, // 팀명
+      { wch: 10 }  // 점수
+    ];
+    ws['!cols'] = colWidths;
+    
+    XLSX.utils.book_append_sheet(wb, ws, '예선전 결과');
+    
+    // Generate buffer
+    const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set headers for file download
+    const fileName = `${qualifier.name}_예선전_결과.xlsx`;
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`);
+    res.setHeader('Content-Length', buffer.length);
+    
+    res.send(buffer);
+  } catch (error) {
+    console.error('Export error:', error);
     res.status(500).json({ error: error.message });
   }
 });
